@@ -2,7 +2,7 @@
 
 Full-stack task yönetimi uygulaması. Node.js + Express + MongoDB + JWT Auth.
 
-## Özellikler
+## Özellikler🐥❤️
 
 - JWT kimlik doğrulama (register/login)
 - Her kullanıcı sadece kendi görevlerini görür
@@ -91,13 +91,3 @@ task-manager/
 | PUT | /api/tasks/:id | Güncelle | ✅ |
 | DELETE | /api/tasks/:id | Sil | ✅ |
 
-## GitHub'a Yükleme
-
-```bash
-git init
-git add .
-git commit -m "initial commit: task manager with JWT auth"
-git remote add origin https://github.com/KULLANICI_ADIN/task-manager.git
-git branch -M main
-git push -u origin main
-```
