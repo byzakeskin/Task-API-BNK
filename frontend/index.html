@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TaskFlow — Görev Yönetimi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0d0f14;
+  --surface:#161921;
+  --surface2:#1e222d;
+  --border:#2a2f3d;
+  --border2:#353b4d;
+  --text:#e8eaf0;
+  --muted:#6b7280;
+  --accent:#6c63ff;
+  --accent2:#8b85ff;
+  --green:#22c55e;
+  --yellow:#eab308;
+  --red:#ef4444;
+  --blue:#3b82f6;
+  --radius:12px;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+button,input,select,textarea{font-family:'DM Sans',sans-serif}
+
+/* ── AUTH SCREEN ── */
+#auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1rem;position:relative;overflow:hidden}
+#auth-screen::before{content:'';position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(108,99,255,0.12) 0%,transparent 70%);top:-100px;right:-100px;pointer-events:none}
+#auth-screen::after{content:'';position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(59,130,246,0.08) 0%,transparent 70%);bottom:-50px;left:-50px;pointer-events:none}
+
+.auth-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;width:100%;max-width:420px;padding:2.5rem;position:relative;z-index:1}
+.auth-logo{display:flex;align-items:center;gap:10px;margin-bottom:2rem}
+.auth-logo-icon{width:36px;height:36px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.auth-logo-text{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;letter-spacing:-0.5px}
+.auth-logo-text span{color:var(--accent2)}
+
+.auth-tabs{display:flex;background:var(--surface2);border-radius:10px;padding:4px;margin-bottom:1.5rem}
+.auth-tab{flex:1;padding:8px;border:none;background:transparent;color:var(--muted);font-size:14px;font-weight:500;cursor:pointer;border-radius:8px;transition:all 0.2s}
+.auth-tab.active{background:var(--accent);color:#fff}
+
+.form-group{margin-bottom:1rem}
+.form-group label{display:block;font-size:12px;font-weight:500;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px}
+.form-group input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-size:14px;outline:none;transition:border-color 0.2s}
+.form-group input:focus{border-color:var(--accent)}
+.form-group input::placeholder{color:var(--muted)}
+
+.btn{padding:11px 20px;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;border:none;transition:all 0.2s;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.btn-primary{background:var(--accent);color:#fff;width:100%;justify-content:center}
+.btn-primary:hover{background:var(--accent2)}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.btn-secondary:hover{border-color:var(--border2);background:var(--border)}
+.btn-danger{background:rgba(239,68,68,0.12);color:var(--red);border:1px solid rgba(239,68,68,0.2)}
+.btn-danger:hover{background:rgba(239,68,68,0.2)}
+.btn-sm{padding:7px 12px;font-size:12px;border-radius:8px}
+.btn-icon{width:32px;height:32px;padding:0;justify-content:center;border-radius:8px}
+
+.auth-error{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:#fca5a5;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px;display:none}
+.auth-error.show{display:block}
+.auth-hint{text-align:center;font-size:12px;color:var(--muted);margin-top:1rem}
+
+/* ── APP LAYOUT ── */
+#app{display:none;min-height:100vh}
+.sidebar{position:fixed;top:0;left:0;bottom:0;width:240px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:50;transition:transform 0.3s}
+.sidebar-logo{padding:1.25rem 1.25rem 1rem;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
+.logo-icon{width:32px;height:32px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.logo-text{font-family:'Syne',sans-serif;font-size:17px;font-weight:700}
+.logo-text span{color:var(--accent2)}
+
+.sidebar-user{padding:1rem 1.25rem;border-bottom:1px solid var(--border)}
+.user-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--blue));display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;flex-shrink:0}
+.user-info{flex:1;min-width:0}
+.user-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-role{font-size:11px;color:var(--muted)}
+.admin-badge{background:rgba(108,99,255,0.15);color:var(--accent2);padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;letter-spacing:0.5px}
+
+.sidebar-nav{flex:1;padding:1rem 0.75rem;display:flex;flex-direction:column;gap:2px}
+.nav-label{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:1px;text-transform:uppercase;padding:0.5rem 0.75rem;margin-top:0.5rem}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;color:var(--muted);font-size:13px;font-weight:500;transition:all 0.15s;border:none;background:transparent;width:100%;text-align:left}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:rgba(108,99,255,0.12);color:var(--accent2)}
+.nav-item svg{width:16px;height:16px;flex-shrink:0}
+.nav-count{margin-left:auto;background:var(--surface2);color:var(--muted);font-size:11px;padding:2px 7px;border-radius:20px;min-width:20px;text-align:center}
+.nav-item.active .nav-count{background:rgba(108,99,255,0.2);color:var(--accent2)}
+
+.sidebar-bottom{padding:0.75rem;border-top:1px solid var(--border)}
+.logout-btn{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;color:var(--muted);font-size:13px;font-weight:500;transition:all 0.15s;border:none;background:transparent;width:100%}
+.logout-btn:hover{background:rgba(239,68,68,0.08);color:var(--red)}
+
+/* ── MAIN CONTENT ── */
+.main{margin-left:240px;padding:2rem;min-height:100vh}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem;gap:1rem}
+.page-title{font-family:'Syne',sans-serif;font-size:24px;font-weight:700}
+.page-sub{font-size:13px;color:var(--muted);margin-top:2px}
+
+/* ── STATS ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;margin-bottom:2rem}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem}
+.stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;font-weight:500}
+.stat-value{font-family:'Syne',sans-serif;font-size:28px;font-weight:700}
+.stat-value.green{color:var(--green)}
+.stat-value.yellow{color:var(--yellow)}
+.stat-value.blue{color:var(--blue)}
+.stat-value.red{color:var(--red)}
+
+/* ── FILTERS ── */
+.filters-bar{display:flex;gap:10px;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap}
+.filter-chip{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);transition:all 0.15s}
+.filter-chip:hover{border-color:var(--border2);color:var(--text)}
+.filter-chip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.search-input{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 14px;color:var(--text);font-size:13px;outline:none;min-width:200px;transition:border-color 0.2s}
+.search-input:focus{border-color:var(--accent)}
+.search-input::placeholder{color:var(--muted)}
+.ml-auto{margin-left:auto}
+
+/* ── TASK LIST ── */
+.tasks-list{display:flex;flex-direction:column;gap:10px}
+.task-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.25rem;display:flex;align-items:flex-start;gap:1rem;transition:border-color 0.15s,transform 0.15s;animation:slideIn 0.25s ease}
+@keyframes slideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.task-card:hover{border-color:var(--border2);transform:translateX(2px)}
+.task-check{width:20px;height:20px;border-radius:6px;border:2px solid var(--border2);cursor:pointer;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;transition:all 0.15s}
+.task-check.done{background:var(--green);border-color:var(--green)}
+.task-check.done::after{content:'✓';color:#fff;font-size:11px;font-weight:700}
+.task-body{flex:1;min-width:0}
+.task-title{font-size:14px;font-weight:500;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.task-title.done-text{text-decoration:line-through;color:var(--muted)}
+.task-desc{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.task-meta{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
+.badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500}
+.badge-pending{background:rgba(234,179,8,0.12);color:var(--yellow)}
+.badge-progress{background:rgba(59,130,246,0.12);color:var(--blue)}
+.badge-done{background:rgba(34,197,94,0.12);color:var(--green)}
+.badge-low{background:rgba(107,114,128,0.12);color:var(--muted)}
+.badge-medium{background:rgba(234,179,8,0.12);color:var(--yellow)}
+.badge-high{background:rgba(239,68,68,0.12);color:var(--red)}
+.task-owner{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:4px}
+.task-owner-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0}
+.task-actions{display:flex;gap:6px;flex-shrink:0}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;display:none;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(4px)}
+.modal-overlay.show{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:20px;width:100%;max-width:480px;animation:modalUp 0.25s cubic-bezier(0.34,1.56,0.64,1)}
+@keyframes modalUp{from{opacity:0;transform:scale(0.95) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.modal-header{padding:1.5rem 1.5rem 0;display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:600}
+.modal-close{background:var(--surface2);border:1px solid var(--border);color:var(--muted);width:32px;height:32px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s}
+.modal-close:hover{color:var(--text);border-color:var(--border2)}
+.modal-body{padding:1.5rem}
+.modal-footer{padding:0 1.5rem 1.5rem;display:flex;gap:10px;justify-content:flex-end}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.form-group select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-size:14px;outline:none;cursor:pointer}
+.form-group select:focus{border-color:var(--accent)}
+.form-group textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-size:14px;outline:none;resize:vertical;min-height:80px;transition:border-color 0.2s}
+.form-group textarea:focus{border-color:var(--accent)}
+.form-group textarea::placeholder{color:var(--muted)}
+
+/* ── ADMIN TABLE ── */
+.admin-users-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-top:2rem}
+.section-header{padding:1rem 1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.section-title{font-size:14px;font-weight:600}
+.user-table{width:100%;border-collapse:collapse}
+.user-table th{text-align:left;padding:10px 1.25rem;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);font-weight:600;background:var(--surface2)}
+.user-table td{padding:12px 1.25rem;font-size:13px;border-top:1px solid var(--border)}
+.user-table tr:hover td{background:rgba(255,255,255,0.02)}
+.user-row-avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--blue));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 18px;font-size:13px;z-index:999;transform:translateY(80px);opacity:0;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);display:flex;align-items:center;gap:10px;max-width:300px;box-shadow:0 8px 32px rgba(0,0,0,0.4)}
+.toast.show{transform:translateY(0);opacity:1}
+.toast-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.toast-dot.success{background:var(--green)}
+.toast-dot.error{background:var(--red)}
+.toast-dot.info{background:var(--accent)}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:4rem 2rem;color:var(--muted)}
+.empty-icon{font-size:48px;margin-bottom:1rem;opacity:0.5}
+.empty h3{font-size:16px;font-weight:500;color:var(--text);margin-bottom:6px}
+.empty p{font-size:13px}
+
+/* ── MOBILE ── */
+.menu-toggle{display:none;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px;cursor:pointer;color:var(--text)}
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0;padding:1rem}
+  .menu-toggle{display:flex;align-items:center;justify-content:center}
+  .form-row{grid-template-columns:1fr}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .overlay-bg{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:49;display:none}
+  .overlay-bg.show{display:block}
+}
+.loading{display:flex;align-items:center;justify-content:center;padding:3rem;color:var(--muted)}
+.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.6s linear infinite;margin-right:10px}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- ── AUTH SCREEN ── -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">🐥</div>
+      <div class="auth-logo-text">Task<span>Flow</span></div>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">Giriş Yap</button>
+      <button class="auth-tab" onclick="switchAuthTab('register')">Kayıt Ol</button>
+    </div>
+    <div class="auth-error" id="auth-error"></div>
+
+    <!-- Login -->
+    <div id="form-login">
+      <div class="form-group"><label>E-posta</label><input type="email" id="l-email" placeholder="ornek@gmail.com"></div>
+      <div class="form-group"><label>Şifre</label><input type="password" id="l-pass" placeholder="••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button class="btn btn-primary" onclick="doLogin()">Giriş Yap</button>
+      <p class="auth-hint" style="margin-top:1rem;font-size:11px;color:var(--muted)">Admin hesabı oluşturmak için kayıt sonrası database'de role: "admin" yapın!</p>
+    </div>
+
+    <!-- Register -->
+    <div id="form-register" style="display:none">
+      <div class="form-group"><label>Ad Soyad</label><input type="text" id="r-name" placeholder="Adınız Soyadınız"></div>
+      <div class="form-group"><label>E-posta</label><input type="email" id="r-email" placeholder="ornek@gmail.com"></div>
+      <div class="form-group"><label>Şifre</label><input type="password" id="r-pass" placeholder="En az 6 karakter" onkeydown="if(event.key==='Enter')doRegister()"></div>
+      <button class="btn btn-primary" onclick="doRegister()">Hesap Oluştur</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── APP ── -->
+<div id="app">
+  <div class="overlay-bg" id="overlay-bg" onclick="closeSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🐥</div>
+      <div class="logo-text">Task<span>Flow</span></div>
+    </div>
+    <div class="sidebar-user">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="user-avatar" id="sb-avatar"></div>
+        <div class="user-info">
+          <div class="user-name" id="sb-name"></div>
+          <div class="user-role" id="sb-role"></div>
+        </div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-label">Görevler</div>
+      <button class="nav-item active" onclick="setView('all')" id="nav-all">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Tüm Görevler <span class="nav-count" id="nc-all">0</span>
+      </button>
+      <button class="nav-item" onclick="setView('pending')" id="nav-pending">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Bekliyor <span class="nav-count" id="nc-pending">0</span>
+      </button>
+      <button class="nav-item" onclick="setView('in-progress')" id="nav-progress">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.07-8.84"/></svg>
+        Devam Ediyor <span class="nav-count" id="nc-progress">0</span>
+      </button>
+      <button class="nav-item" onclick="setView('done')" id="nav-done">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        Tamamlandı <span class="nav-count" id="nc-done">0</span>
+      </button>
+      <div class="nav-label" id="admin-section" style="display:none">Yönetim</div>
+      <button class="nav-item" onclick="setView('admin-users')" id="nav-admin" style="display:none">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Kullanıcılar
+      </button>
+    </nav>
+    <div class="sidebar-bottom">
+      <button class="logout-btn" onclick="logout()">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Çıkış Yap
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="topbar">
+      <button class="menu-toggle" onclick="toggleSidebar()">
+        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div>
+        <div class="page-title" id="page-title">Tüm Görevler</div>
+        <div class="page-sub" id="page-sub"></div>
+      </div>
+      <button class="btn btn-primary ml-auto" onclick="openTaskModal()" id="add-task-btn">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Yeni Görev
+      </button>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">Toplam</div><div class="stat-value" id="st-total">0</div></div>
+      <div class="stat-card"><div class="stat-label">Bekliyor</div><div class="stat-value yellow" id="st-pending">0</div></div>
+      <div class="stat-card"><div class="stat-label">Devam</div><div class="stat-value blue" id="st-progress">0</div></div>
+      <div class="stat-card"><div class="stat-label">Tamamlandı</div><div class="stat-value green" id="st-done">0</div></div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-bar" id="filters-bar">
+      <input class="search-input" id="search-input" placeholder="Görev ara..." oninput="renderTasks()">
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="filter-chip active" onclick="setPriorityFilter(this,'all')">Tümü</button>
+        <button class="filter-chip" onclick="setPriorityFilter(this,'high')">🔴 Yüksek</button>
+        <button class="filter-chip" onclick="setPriorityFilter(this,'medium')">🟡 Orta</button>
+        <button class="filter-chip" onclick="setPriorityFilter(this,'low')">⚪ Düşük</button>
+      </div>
+    </div>
+
+    <!-- Task list -->
+    <div id="tasks-container"></div>
+
+    <!-- Admin users view -->
+    <div id="admin-view" style="display:none"></div>
+  </main>
+</div>
+
+<!-- ── TASK MODAL ── -->
+<div class="modal-overlay" id="task-modal" onclick="handleModalClick(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Yeni Görev</div>
+      <button class="modal-close" onclick="closeTaskModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label>Başlık *</label><input type="text" id="t-title" placeholder="Görev başlığı..."></div>
+      <div class="form-group"><label>Açıklama</label><textarea id="t-desc" placeholder="Detaylar..."></textarea></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Durum</label>
+          <select id="t-status">
+            <option value="pending">Bekliyor</option>
+            <option value="in-progress">Devam Ediyor</option>
+            <option value="done">Tamamlandı</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Öncelik</label>
+          <select id="t-priority">
+            <option value="low">Düşük</option>
+            <option value="medium" selected>Orta</option>
+            <option value="high">Yüksek</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeTaskModal()">İptal</button>
+      <button class="btn btn-primary" onclick="saveTask()" id="save-btn">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <div class="toast-dot success" id="toast-dot"></div>
+  <span id="toast-text"></span>
+</div>
+
+<script>
+const API = '/api';
+let token = localStorage.getItem('tf_token');
+let currentUser = JSON.parse(localStorage.getItem('tf_user') || 'null');
+let allTasks = [];
+let currentView = 'all';
+let priorityFilter = 'all';
+let editingTaskId = null;
+
+// ── AUTH ──────────────────────────────────────────────────────
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((t,i) => t.classList.toggle('active', (i===0&&tab==='login')||(i===1&&tab==='register')));
+  document.getElementById('form-login').style.display = tab==='login'?'':'none';
+  document.getElementById('form-register').style.display = tab==='register'?'':'none';
+  document.getElementById('auth-error').classList.remove('show');
+}
+
+async function doLogin() {
+  const email = document.getElementById('l-email').value.trim();
+  const pass = document.getElementById('l-pass').value;
+  if (!email||!pass) return showAuthError('Lütfen tüm alanları doldurun.');
+  try {
+    const res = await fetch(`${API}/auth/login`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
+    const data = await res.json();
+    if (!res.ok) return showAuthError(data.message);
+    saveSession(data.token, data.user);
+    initApp();
+  } catch { showAuthError('Sunucuya bağlanılamadı. Backend çalışıyor mu?'); }
+}
+
+async function doRegister() {
+  const name = document.getElementById('r-name').value.trim();
+  const email = document.getElementById('r-email').value.trim();
+  const pass = document.getElementById('r-pass').value;
+  if (!name||!email||!pass) return showAuthError('Lütfen tüm alanları doldurun.');
+  if (pass.length < 6) return showAuthError('Şifre en az 6 karakter olmalı.');
+  try {
+    const res = await fetch(`${API}/auth/register`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,password:pass})});
+    const data = await res.json();
+    if (!res.ok) return showAuthError(data.message);
+    saveSession(data.token, data.user);
+    initApp();
+  } catch { showAuthError('Sunucuya bağlanılamadı. Backend çalışıyor mu?'); }
+}
+
+function saveSession(t, u) {
+  token = t; currentUser = u;
+  localStorage.setItem('tf_token', t);
+  localStorage.setItem('tf_user', JSON.stringify(u));
+}
+
+function showAuthError(msg) {
+  const el = document.getElementById('auth-error');
+  el.textContent = msg; el.classList.add('show');
+}
+
+function logout() {
+  localStorage.removeItem('tf_token'); localStorage.removeItem('tf_user');
+  token = null; currentUser = null; allTasks = [];
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+function initApp() {
+  if (!token || !currentUser) return;
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+
+  document.getElementById('sb-name').textContent = currentUser.name;
+  document.getElementById('sb-avatar').textContent = currentUser.name.charAt(0).toUpperCase();
+  document.getElementById('sb-role').innerHTML = currentUser.role === 'admin'
+    ? '<span class="admin-badge">ADMIN</span>'
+    : 'Kullanıcı';
+
+  if (currentUser.role === 'admin') {
+    document.getElementById('admin-section').style.display = '';
+    document.getElementById('nav-admin').style.display = 'flex';
+    document.getElementById('page-sub').textContent = 'Tüm kullanıcıların görevlerini görüyorsunuz';
+  } else {
+    document.getElementById('page-sub').textContent = 'Kendi görevlerinizi yönetiyorsunuz';
+  }
+
+  loadTasks();
+}
+
+// ── TASKS ─────────────────────────────────────────────────────
+async function loadTasks() {
+  document.getElementById('tasks-container').innerHTML = '<div class="loading"><div class="spinner"></div> Yükleniyor...</div>';
+  try {
+    const res = await fetch(`${API}/tasks`, {headers:{Authorization:`Bearer ${token}`}});
+    if (res.status === 401) return logout();
+    const data = await res.json();
+    allTasks = data.tasks || [];
+    updateStats();
+    renderTasks();
+  } catch {
+    document.getElementById('tasks-container').innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><h3>Bağlantı hatası</h3><p>Backend sunucusunun çalıştığından emin olun.</p></div>';
+  }
+}
+
+function updateStats() {
+  const tasks = allTasks;
+  document.getElementById('st-total').textContent = tasks.length;
+  document.getElementById('st-pending').textContent = tasks.filter(t=>t.status==='pending').length;
+  document.getElementById('st-progress').textContent = tasks.filter(t=>t.status==='in-progress').length;
+  document.getElementById('st-done').textContent = tasks.filter(t=>t.status==='done').length;
+  document.getElementById('nc-all').textContent = tasks.length;
+  document.getElementById('nc-pending').textContent = tasks.filter(t=>t.status==='pending').length;
+  document.getElementById('nc-progress').textContent = tasks.filter(t=>t.status==='in-progress').length;
+  document.getElementById('nc-done').textContent = tasks.filter(t=>t.status==='done').length;
+}
+
+function renderTasks() {
+  const container = document.getElementById('tasks-container');
+  const search = document.getElementById('search-input')?.value.toLowerCase() || '';
+
+  let filtered = allTasks.filter(t => {
+    if (currentView !== 'all' && t.status !== currentView) return false;
+    if (priorityFilter !== 'all' && t.priority !== priorityFilter) return false;
+    if (search && !t.title.toLowerCase().includes(search) && !(t.description||'').toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  if (!filtered.length) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">📭</div><h3>Görev bulunamadı</h3><p>Yeni bir görev ekleyin veya filtreleri değiştirin.</p></div>`;
+    return;
+  }
+
+  container.innerHTML = `<div class="tasks-list">${filtered.map(t => taskCard(t)).join('')}</div>`;
+}
+
+function taskCard(t) {
+  const statusBadge = {pending:'badge-pending',  'in-progress':'badge-progress', done:'badge-done'}[t.status];
+  const statusLabel = {pending:'Bekliyor','in-progress':'Devam Ediyor',done:'Tamamlandı'}[t.status];
+  const priorityBadge = {low:'badge-low',medium:'badge-medium',high:'badge-high'}[t.priority];
+  const priorityLabel = {low:'Düşük',medium:'Orta',high:'Yüksek'}[t.priority];
+  const ownerHtml = currentUser.role==='admin' && t.user
+    ? `<span class="task-owner"><span class="task-owner-dot"></span>${t.user.name||t.user.email||'Kullanıcı'}</span>` : '';
+  return `
+    <div class="task-card" id="task-${t._id}">
+      <div class="task-check ${t.status==='done'?'done':''}" onclick="quickToggle('${t._id}','${t.status}')"></div>
+      <div class="task-body">
+        <div class="task-title ${t.status==='done'?'done-text':''}">${escHtml(t.title)}</div>
+        ${t.description?`<div class="task-desc">${escHtml(t.description)}</div>`:''}
+        <div class="task-meta">
+          <span class="badge ${statusBadge}">${statusLabel}</span>
+          <span class="badge ${priorityBadge}">${priorityLabel}</span>
+          ${ownerHtml}
+        </div>
+      </div>
+      <div class="task-actions">
+        <button class="btn btn-secondary btn-sm btn-icon" onclick="openEditModal('${t._id}')" title="Düzenle">✏️</button>
+        <button class="btn btn-danger btn-sm btn-icon" onclick="deleteTask('${t._id}')" title="Sil">🗑</button>
+      </div>
+    </div>`;
+}
+
+function escHtml(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+async function quickToggle(id, status) {
+  const newStatus = status === 'done' ? 'pending' : 'done';
+  await updateTask(id, {status: newStatus});
+}
+
+function setView(view) {
+  currentView = view;
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const navId = {all:'nav-all',pending:'nav-pending','in-progress':'nav-progress',done:'nav-done','admin-users':'nav-admin'}[view];
+  if (navId) document.getElementById(navId)?.classList.add('active');
+
+  const titles = {all:'Tüm Görevler',pending:'Bekleyenler','in-progress':'Devam Edenler',done:'Tamamlananlar','admin-users':'Kullanıcılar'};
+  document.getElementById('page-title').textContent = titles[view] || 'Görevler';
+
+  document.getElementById('tasks-container').style.display = view==='admin-users'?'none':'';
+  document.getElementById('filters-bar').style.display = view==='admin-users'?'none':'';
+  document.getElementById('add-task-btn').style.display = view==='admin-users'?'none':'';
+  document.getElementById('admin-view').style.display = view==='admin-users'?'':'none';
+
+  if (view === 'admin-users') loadAdminUsers();
+  else renderTasks();
+  closeSidebar();
+}
+
+function setPriorityFilter(btn, val) {
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  priorityFilter = val;
+  renderTasks();
+}
+
+// ── TASK CRUD ─────────────────────────────────────────────────
+function openTaskModal() {
+  editingTaskId = null;
+  document.getElementById('modal-title').textContent = 'Yeni Görev';
+  document.getElementById('save-btn').textContent = 'Kaydet';
+  document.getElementById('t-title').value = '';
+  document.getElementById('t-desc').value = '';
+  document.getElementById('t-status').value = 'pending';
+  document.getElementById('t-priority').value = 'medium';
+  document.getElementById('task-modal').classList.add('show');
+  setTimeout(() => document.getElementById('t-title').focus(), 100);
+}
+
+function openEditModal(id) {
+  const task = allTasks.find(t => t._id === id);
+  if (!task) return;
+  editingTaskId = id;
+  document.getElementById('modal-title').textContent = 'Görevi Düzenle';
+  document.getElementById('save-btn').textContent = 'Güncelle';
+  document.getElementById('t-title').value = task.title;
+  document.getElementById('t-desc').value = task.description || '';
+  document.getElementById('t-status').value = task.status;
+  document.getElementById('t-priority').value = task.priority;
+  document.getElementById('task-modal').classList.add('show');
+}
+
+function closeTaskModal() { document.getElementById('task-modal').classList.remove('show'); }
+function handleModalClick(e) { if (e.target.id==='task-modal') closeTaskModal(); }
+
+async function saveTask() {
+  const title = document.getElementById('t-title').value.trim();
+  if (!title) { document.getElementById('t-title').style.borderColor='var(--red)'; return; }
+  document.getElementById('t-title').style.borderColor='';
+  const body = {
+    title,
+    description: document.getElementById('t-desc').value.trim(),
+    status: document.getElementById('t-status').value,
+    priority: document.getElementById('t-priority').value,
+  };
+  if (editingTaskId) {
+    await updateTask(editingTaskId, body);
+  } else {
+    try {
+      const res = await fetch(`${API}/tasks`, {method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify(body)});
+      const data = await res.json();
+      if (!res.ok) return showToast(data.message,'error');
+      allTasks.unshift(data);
+      updateStats(); renderTasks();
+      showToast('Görev oluşturuldu ✓','success');
+    } catch { showToast('Hata oluştu','error'); }
+  }
+  closeTaskModal();
+}
+
+async function updateTask(id, body) {
+  try {
+    const res = await fetch(`${API}/tasks/${id}`, {method:'PUT',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const data = await res.json();
+    if (!res.ok) return showToast(data.message,'error');
+    const idx = allTasks.findIndex(t => t._id === id);
+    if (idx !== -1) allTasks[idx] = {...allTasks[idx], ...data};
+    updateStats(); renderTasks();
+    showToast('Görev güncellendi ✓','success');
+  } catch { showToast('Hata oluştu','error'); }
+}
+
+async function deleteTask(id) {
+  if (!confirm('Bu görevi silmek istediğinize emin misiniz?')) return;
+  try {
+    const res = await fetch(`${API}/tasks/${id}`, {method:'DELETE',headers:{Authorization:`Bearer ${token}`}});
+    if (!res.ok) { const d=await res.json(); return showToast(d.message,'error'); }
+    allTasks = allTasks.filter(t => t._id !== id);
+    updateStats(); renderTasks();
+    showToast('Görev silindi','info');
+  } catch { showToast('Hata oluştu','error'); }
+}
+
+// ── ADMIN USERS ───────────────────────────────────────────────
+async function loadAdminUsers() {
+  const view = document.getElementById('admin-view');
+  view.innerHTML = '<div class="loading"><div class="spinner"></div> Kullanıcılar yükleniyor...</div>';
+  try {
+    const res = await fetch(`${API}/auth/users`, {headers:{Authorization:`Bearer ${token}`}});
+    const users = await res.json();
+    if (!res.ok) { view.innerHTML = `<div class="empty"><div class="empty-icon">🔒</div><h3>Erişim reddedildi</h3></div>`; return; }
+
+    const rows = users.map(u => `
+      <tr>
+        <td><div style="display:flex;align-items:center;gap:10px">
+          <div class="user-row-avatar">${u.name.charAt(0).toUpperCase()}</div>
+          <div><div style="font-weight:500">${escHtml(u.name)}</div><div style="font-size:11px;color:var(--muted)">${escHtml(u.email)}</div></div>
+        </div></td>
+        <td>${u.role==='admin'?'<span class="admin-badge">ADMIN</span>':'<span style="color:var(--muted);font-size:12px">Kullanıcı</span>'}</td>
+        <td style="color:var(--muted);font-size:12px">${new Date(u.createdAt).toLocaleDateString('tr-TR')}</td>
+        <td><button class="btn btn-secondary btn-sm" onclick="filterByUser('${u._id}','${escHtml(u.name)}')">Görevler →</button></td>
+      </tr>`).join('');
+
+    view.innerHTML = `
+      <div class="admin-users-section">
+        <div class="section-header"><div class="section-title">Kayıtlı Kullanıcılar</div><span style="font-size:12px;color:var(--muted)">${users.length} kullanıcı</span></div>
+        <table class="user-table">
+          <thead><tr><th>Kullanıcı</th><th>Rol</th><th>Kayıt Tarihi</th><th>İşlem</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  } catch { view.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><h3>Bağlantı hatası</h3></div>'; }
+}
+
+async function filterByUser(userId, name) {
+  currentView = 'all';
+  document.getElementById('page-title').textContent = name + ' — Görevler';
+  document.getElementById('admin-view').style.display = 'none';
+  document.getElementById('tasks-container').style.display = '';
+  document.getElementById('filters-bar').style.display = '';
+  document.getElementById('add-task-btn').style.display = '';
+
+  document.getElementById('tasks-container').innerHTML = '<div class="loading"><div class="spinner"></div> Yükleniyor...</div>';
+  try {
+    const res = await fetch(`${API}/tasks?userId=${userId}`, {headers:{Authorization:`Bearer ${token}`}});
+    const data = await res.json();
+    allTasks = data.tasks || [];
+    updateStats(); renderTasks();
+  } catch { showToast('Hata oluştu','error'); }
+}
+
+// ── SIDEBAR ───────────────────────────────────────────────────
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay-bg').classList.toggle('show');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay-bg').classList.remove('show');
+}
+
+// ── TOAST ─────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  const d = document.getElementById('toast-dot');
+  document.getElementById('toast-text').textContent = msg;
+  d.className = `toast-dot ${type}`;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── BOOT ──────────────────────────────────────────────────────
+if (token && currentUser) initApp();
+</script>
+</body>
+</html>
